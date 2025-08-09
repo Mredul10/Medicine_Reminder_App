@@ -114,4 +114,8 @@ class DatabaseHelper {
     final db = await database;
     return await db.insert('reminders', {'medicine_id': medId, 'time': time});
   }
+  Future<int> deleteReminder(int id) async {
+  final db = await database;
+  return await db.delete('reminders', where: 'id = ?', whereArgs: [id]);
+}
 }

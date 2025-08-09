@@ -54,6 +54,25 @@ class _DetailScreenState extends State<DetailScreen> {
       await _load();
     }
   }
+  Future<void> _deleteReminder(Reminder reminder) async {
+    // Optional: show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Delete Reminder'),
+        content: Text('Are you sure you want to delete this reminder at ${reminder.time}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context, true), child: Text('Delete')),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await db.deleteReminder(reminder.id!);
+      await _load();
+    }
+  }
 
   TimeOfDay? _parseTime(String timeStr) {
     try {
@@ -146,15 +165,26 @@ class _DetailScreenState extends State<DetailScreen> {
                         ),
                       ),
                       SizedBox(height: 8),
-                      ...reminders.map((r) => Card(
+                        ...reminders.map((r) => Card(
                             color: Colors.white70,
                             margin: EdgeInsets.symmetric(vertical: 6),
                             child: ListTile(
                               leading: Icon(Icons.alarm,
                                   color: Theme.of(context).primaryColor),
                               title: Text(r.time),
-                              trailing: Icon(Icons.edit),
-                              onTap: () => _editReminder(r),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: Icon(Icons.edit),
+                                    onPressed: () => _editReminder(r),
+                                  ),
+                                  IconButton(
+                                    icon: Icon(Icons.delete, color: Colors.red),
+                                    onPressed: () => _deleteReminder(r),
+                                  ),
+                                ],
+                              ),
                             ),
                           )),
                       Spacer(),
