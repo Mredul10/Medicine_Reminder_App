@@ -17,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Medicine> meds = [];
   bool loading = true;
   bool _showSearch = false; // for showing search bar
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -27,6 +28,16 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _load() async {
     setState(() => loading = true);
     meds = await db.getAllMedicines();
+    setState(() => loading = false);
+  }
+
+  Future<void> _search(String query) async {
+    setState(() => loading = true);
+    if (query.isEmpty) {
+      meds = await db.getAllMedicines();
+    } else {
+      meds = await db.searchMedicinesMatchesFirst(query);
+    }
     setState(() => loading = false);
   }
 
@@ -54,66 +65,71 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true, // so gradient shows behind the AppBar too
-appBar: PreferredSize(
-  preferredSize: Size.fromHeight(kToolbarHeight),
-  child: Padding(
-    padding: const EdgeInsets.only(left: 10),
-    child: AppBar(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      leading: !_showSearch
-          ? ClipOval(
-              child: Image.asset(
-                'assets/images/mredul.jpg',
-                fit: BoxFit.fill,
-              ),
-            )
-          : null,
-      title: _showSearch
-          ? Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: Colors.white60,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: EdgeInsets.symmetric(horizontal: 10),
-              child: Row(
-                children: [
-                  Icon(Icons.search, color: Colors.grey),
-                  SizedBox(width: 8),
-                  Text(
-                    "Search...",
-                    style: TextStyle(color: Colors.grey),
+      appBar: PreferredSize(
+        preferredSize: Size.fromHeight(kToolbarHeight),
+        child: Padding(
+          padding: const EdgeInsets.only(left: 10),
+          child: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: !_showSearch
+                ? ClipOval(
+                    child: Image.asset(
+                      'assets/images/mredul.jpg',
+                      fit: BoxFit.fill,
+                    ),
+                  )
+                : null,
+            title: _showSearch
+                ? Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white60,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 10),
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: _search,
+                      style: TextStyle(color: Colors.black),
+                      decoration: InputDecoration(
+                        icon: Icon(Icons.search, color: Colors.grey),
+                        hintText: "Search...",
+                        hintStyle: TextStyle(color: Colors.grey),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  )
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Hey,',
+                          style:
+                              TextStyle(fontSize: 15, color: Colors.white70)),
+                      Text('Mredul 👋',
+                          style: TextStyle(fontWeight: FontWeight.bold))
+                    ],
                   ),
-                ],
-              ),
-            )
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Hey,',
-                    style: TextStyle(fontSize: 15, color: Colors.white70)),
-                Text('Mredul 👋',
-                    style: TextStyle(fontWeight: FontWeight.bold))
-              ],
-            ),
-      actions: [
-        IconButton(
-          onPressed: () {
-            setState(() {
-              _showSearch = !_showSearch;
-            });
-          },
-          icon: Icon(
-            _showSearch ? Icons.close : Icons.search,
-            color: Colors.black,
+            actions: [
+              IconButton(
+                onPressed: () {
+                  setState(() {
+                    _showSearch = !_showSearch;
+                    if (!_showSearch) {
+                      _searchController.clear();
+                      _load();
+                    }
+                  });
+                },
+                icon: Icon(
+                  _showSearch ? Icons.close : Icons.search,
+                  color: Colors.black,
+                ),
+              )
+            ],
           ),
-        )
-      ],
-    ),
-  ),
-),
-
+        ),
+      ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(

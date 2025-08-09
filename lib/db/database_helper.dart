@@ -118,4 +118,27 @@ class DatabaseHelper {
   final db = await database;
   return await db.delete('reminders', where: 'id = ?', whereArgs: [id]);
 }
+// Get all medicines but put matches first
+Future<List<Medicine>> searchMedicinesMatchesFirst(String query) async {
+  final db = await database;
+
+  final medMaps = await db.query(
+    'medicines',
+    orderBy: "CASE WHEN name LIKE ? THEN 0 ELSE 1 END, id DESC",
+    whereArgs: ['%$query%'],
+  );
+
+  List<Medicine> list = [];
+  for (var m in medMaps) {
+    final reminders = await db.query(
+      'reminders',
+      where: 'medicine_id = ?',
+      whereArgs: [m['id']],
+    );
+    final times = reminders.map((r) => r['time'] as String).toList();
+    list.add(Medicine.fromMap(m, times));
+  }
+
+  return list;
+}
 }
