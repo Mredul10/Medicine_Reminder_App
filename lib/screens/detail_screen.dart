@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../db/database_helper.dart';
 import '../models/medicine.dart';
 import '../models/reminder.dart';
+import 'add_edit_medicine.dart';
 
 class DetailScreen extends StatefulWidget {
   final int medicineId;
@@ -30,21 +31,71 @@ class _DetailScreenState extends State<DetailScreen> {
     setState(() => loading = false);
   }
 
+  Future<void> _editMedicine() async {
+    if (med == null) return;
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => AddEditMedicine(medicine: med)),
+    );
+    if (result == true) {
+      await _load();
+    }
+  }
+
+  Future<void> _editReminder(Reminder reminder) async {
+    TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _parseTime(reminder.time) ?? TimeOfDay.now(),
+    );
+    if (picked != null) {
+      String formattedTime = _formatTimeOfDay(picked);
+      Reminder updated = Reminder(id: reminder.id, medicineId: reminder.medicineId, time: formattedTime);
+      await db.updateReminder(updated);
+      await _load();
+    }
+  }
+
+  TimeOfDay? _parseTime(String timeStr) {
+    try {
+      final parts = timeStr.split(' ');
+      final hm = parts[0].split(':');
+      int h = int.parse(hm[0]);
+      int m = int.parse(hm[1]);
+      final ampm = parts[1].toUpperCase();
+      if (ampm == 'PM' && h < 12) h += 12;
+      if (ampm == 'AM' && h == 12) h = 0;
+      return TimeOfDay(hour: h, minute: m);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    return MaterialLocalizations.of(context).formatTimeOfDay(time);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      extendBodyBehindAppBar: true, // lets gradient show behind appbar
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
         iconTheme: IconThemeData(color: Colors.white),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.edit, color: Colors.white),
+            onPressed: _editMedicine,
+            tooltip: 'Edit Medicine',
+          )
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              Color(0xFFEF7A9A), // light green
-              Color(0xFF6EC1C6), // light blue
+              Color(0xFFEF7A9A),
+              Color(0xFF6EC1C6),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
@@ -79,7 +130,7 @@ class _DetailScreenState extends State<DetailScreen> {
                       Text(
                         med!.notes,
                         style: TextStyle(
-                          fontSize: 18,
+                            fontSize: 18,
                             color: Colors.black87,
                             fontWeight: FontWeight.bold),
                       ),
@@ -88,18 +139,22 @@ class _DetailScreenState extends State<DetailScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Schedule:',
-                          style: TextStyle(fontSize: 18,fontWeight: FontWeight.bold, color: Colors.white),
+                          style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white),
                         ),
                       ),
                       SizedBox(height: 8),
                       ...reminders.map((r) => Card(
-                        color: Colors.white70,
+                            color: Colors.white70,
                             margin: EdgeInsets.symmetric(vertical: 6),
                             child: ListTile(
                               leading: Icon(Icons.alarm,
                                   color: Theme.of(context).primaryColor),
                               title: Text(r.time),
-                              trailing: Icon(Icons.check_circle_outline),
+                              trailing: Icon(Icons.edit),
+                              onTap: () => _editReminder(r),
                             ),
                           )),
                       Spacer(),
@@ -107,12 +162,15 @@ class _DetailScreenState extends State<DetailScreen> {
                         children: [
                           Expanded(
                               child: OutlinedButton(
-                                  onPressed: () {}, child: Text('Export PDF',style: TextStyle(color: Colors.white)))),
+                                  onPressed: () {},
+                                  child: Text('Export PDF',
+                                      style: TextStyle(color: Colors.white)))),
                           SizedBox(width: 12),
                           Expanded(
                               child: ElevatedButton(
                                   onPressed: () {},
-                                  child: Text('Log Medication', style: TextStyle(color: Colors.white)))),
+                                  child: Text('Log Medication',
+                                      style: TextStyle(color: Colors.white)))),
                         ],
                       )
                     ],
